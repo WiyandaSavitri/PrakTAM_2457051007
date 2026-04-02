@@ -81,7 +81,7 @@ fun PomodoroScreen() {
             )
 
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(FocusSessionSource.sessions) { session ->
                     SessionRowItem(session = session)
@@ -103,12 +103,16 @@ fun PomodoroScreen() {
         }
     }
 }
+
 @Composable
 fun SessionRowItem(session: FocusSession) {
     Card(
         modifier = Modifier.width(160.dp),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Column {
             Image(
@@ -116,15 +120,16 @@ fun SessionRowItem(session: FocusSession) {
                 contentDescription = session.title,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(100.dp),
+                    .height(100.dp)
+                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
                 contentScale = ContentScale.Crop
             )
 
-            Column(modifier = Modifier.padding(8.dp)) {
+            Column(modifier = Modifier.padding(10.dp)) {
                 Text(
                     text = session.title,
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = "${session.durasi} menit",
@@ -148,7 +153,11 @@ fun SessionDetail(session: FocusSession) {
             containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
             Box {
                 Image(
                     painter = painterResource(id = session.imageRes),
@@ -168,7 +177,8 @@ fun SessionDetail(session: FocusSession) {
                     Icon(
                         imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                         contentDescription = "Favorite Icon",
-                        tint = if (isFavorite) Color.Red else Color.Black
+                        tint = if (isFavorite) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -177,7 +187,7 @@ fun SessionDetail(session: FocusSession) {
 
             Text(
                 text = session.title,
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
 
@@ -185,22 +195,22 @@ fun SessionDetail(session: FocusSession) {
 
             Text(
                 text = session.note,
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyMedium
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = "Hari: ${session.hari}",
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyMedium
             )
             Text(
                 text = "Durasi: ${session.durasi} menit",
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyMedium
             )
             Text(
                 text = "Status: ${session.status}",
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyMedium
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -209,7 +219,10 @@ fun SessionDetail(session: FocusSession) {
                 onClick = { },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Mulai Sesi")
+                Text(
+                    text = "Mulai Sesi",
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
             }
         }
     }
