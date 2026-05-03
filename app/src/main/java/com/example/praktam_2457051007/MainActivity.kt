@@ -1,10 +1,10 @@
 package com.example.praktam_2457051007
 
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,6 +36,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,8 +55,10 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
+import com.example.praktam_2457051007.R
 import com.example.praktam_2457051007.model.FocusSession
-import com.example.praktam_2457051007.model.FocusSessionSource
+import com.example.praktam_2457051007.network.RetrofitClient
 import com.example.praktam_2457051007.ui.theme.PrakTAM_2457051007Theme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -75,17 +78,24 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppNavigation(navController: NavHostController) {
+    var sessions by remember { mutableStateOf<List<FocusSession>>(emptyList()) }
+
     NavHost(
         navController = navController,
         startDestination = "home"
     ) {
         composable("home") {
-            PomodoroScreen(navController)
+            PomodoroScreen(
+                navController = navController,
+                onSessionsLoaded = { fetchedSessions ->
+                    sessions = fetchedSessions
+                }
+            )
         }
 
         composable("detail/{title}") { backStackEntry ->
             val title = backStackEntry.arguments?.getString("title")
-            val session = FocusSessionSource.sessions.find { it.title == title }
+            val session = sessions.find { it.title == title }
 
             if (session != null) {
                 DetailScreen(
@@ -99,48 +109,103 @@ fun AppNavigation(navController: NavHostController) {
 }
 
 @Composable
-fun PomodoroScreen(navController: NavController) {
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding(),
-        contentPadding = PaddingValues(24.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
-    ) {
-        item {
-            Text(
-                text = "Rekomendasi Populer",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+fun PomodoroScreen(
+    navController: NavController,
+    onSessionsLoaded: (List<FocusSession>) -> Unit = {}
+) {
+    var sessions by remember { mutableStateOf<List<FocusSession>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var isError by remember { mutableStateOf(false) }
 
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(FocusSessionSource.sessions) { session ->
-                    SessionRowItem(
-                        session = session,
-                        navController = navController
-                    )
-                }
-            }
+    LaunchedEffect(Unit) {
+        try {
+            sessions = RetrofitClient.apiService.getFocusSessions()
+            onSessionsLoaded(sessions)
+            isLoading = false
+            isError = false
+        } catch (e: Exception) {
+            isLoading = false
+            isError = true
+        }
+    }
 
-            Spacer(modifier = Modifier.height(45.dp))
-
-            Text(
-                text = "Daftar Session Lengkap",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp)
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(
+                color = MaterialTheme.colorScheme.primary
             )
         }
+    } else if (isError || sessions.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Gagal Memuat Data",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
 
-        items(FocusSessionSource.sessions) { session ->
-            SessionItem(
-                session = session,
-                navController = navController
-            )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Pastikan koneksi internet Anda menyala",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding(),
+            contentPadding = PaddingValues(24.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            item {
+                Text(
+                    text = "Rekomendasi Populer",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(sessions) { session ->
+                        SessionRowItem(
+                            session = session,
+                            navController = navController
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(45.dp))
+
+                Text(
+                    text = "Daftar Session Lengkap",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+
+            items(sessions) { session ->
+                SessionItem(
+                    session = session,
+                    navController = navController
+                )
+            }
         }
     }
 }
@@ -151,7 +216,7 @@ fun SessionRowItem(session: FocusSession, navController: NavController) {
         modifier = Modifier
             .width(160.dp)
             .clickable {
-                navController.navigate("detail/${session.title}")
+                navController.navigate("detail/${Uri.encode(session.title)}")
             },
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -160,9 +225,11 @@ fun SessionRowItem(session: FocusSession, navController: NavController) {
         )
     ) {
         Column {
-            Image(
-                painter = painterResource(id = session.imageRes),
+            AsyncImage(
+                model = session.imageUrl,
                 contentDescription = session.title,
+                placeholder = painterResource(id = R.drawable.focus),
+                error = painterResource(id = R.drawable.pomodoro),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp)
@@ -176,6 +243,7 @@ fun SessionRowItem(session: FocusSession, navController: NavController) {
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold
                 )
+
                 Text(
                     text = "${session.durasi} menit",
                     style = MaterialTheme.typography.bodySmall,
@@ -194,7 +262,7 @@ fun SessionItem(session: FocusSession, navController: NavController) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
-                navController.navigate("detail/${session.title}")
+                navController.navigate("detail/${Uri.encode(session.title)}")
             },
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
@@ -208,9 +276,11 @@ fun SessionItem(session: FocusSession, navController: NavController) {
                 .padding(12.dp)
         ) {
             Box {
-                Image(
-                    painter = painterResource(id = session.imageRes),
+                AsyncImage(
+                    model = session.imageUrl,
                     contentDescription = session.title,
+                    placeholder = painterResource(id = R.drawable.focus),
+                    error = painterResource(id = R.drawable.pomodoro),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(160.dp)
@@ -254,10 +324,12 @@ fun SessionItem(session: FocusSession, navController: NavController) {
                 text = "Hari: ${session.hari}",
                 style = MaterialTheme.typography.bodyMedium
             )
+
             Text(
                 text = "Durasi: ${session.durasi} menit",
                 style = MaterialTheme.typography.bodyMedium
             )
+
             Text(
                 text = "Status: ${session.status}",
                 style = MaterialTheme.typography.bodyMedium
@@ -267,7 +339,7 @@ fun SessionItem(session: FocusSession, navController: NavController) {
 
             Button(
                 onClick = {
-                    navController.navigate("detail/${session.title}")
+                    navController.navigate("detail/${Uri.encode(session.title)}")
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -310,9 +382,11 @@ fun DetailScreen(
                     .padding(16.dp)
             ) {
                 Box {
-                    Image(
-                        painter = painterResource(id = session.imageRes),
+                    AsyncImage(
+                        model = session.imageUrl,
                         contentDescription = session.title,
+                        placeholder = painterResource(id = R.drawable.focus),
+                        error = painterResource(id = R.drawable.pomodoro),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(220.dp)
@@ -376,7 +450,7 @@ fun DetailScreen(
                                 isLoading = true
                                 delay(2000)
                                 snackbarHostState.showSnackbar(
-                                    "Pesanan ${session.title} berhasil diproses!"
+                                    "Sesi ${session.title} berhasil dimulai!"
                                 )
                                 isLoading = false
                             }
@@ -416,7 +490,7 @@ fun DetailScreen(
                 } else {
                     Button(
                         onClick = {
-                            navController.navigate("detail/${session.title}")
+                            navController.navigate("detail/${Uri.encode(session.title)}")
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {

@@ -1,6 +1,6 @@
 package com.example.praktam_2457051007.model
 
-import androidx.annotation.DrawableRes
+import com.google.gson.annotations.SerializedName
 
 data class FocusSession(
     val title: String,
@@ -8,5 +8,7 @@ data class FocusSession(
     val durasi: Int,
     val status: String,
     val note: String,
-    @DrawableRes val imageRes: Int
+
+    @SerializedName("image_url")
+    val imageUrl: String
 )
