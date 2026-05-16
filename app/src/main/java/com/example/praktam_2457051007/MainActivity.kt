@@ -56,9 +56,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
-import com.example.praktam_2457051007.R
-import com.example.praktam_2457051007.model.FocusSession
-import com.example.praktam_2457051007.network.RetrofitClient
+import com.example.praktam_2457051007.data.model.FocusSession
+import com.example.praktam_2457051007.data.repository.FocusSessionRepository
 import com.example.praktam_2457051007.ui.theme.PrakTAM_2457051007Theme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -117,12 +116,15 @@ fun PomodoroScreen(
     var isLoading by remember { mutableStateOf(true) }
     var isError by remember { mutableStateOf(false) }
 
+    val repository = remember { FocusSessionRepository() }
+
     LaunchedEffect(Unit) {
         try {
-            sessions = RetrofitClient.apiService.getFocusSessions()
+            isLoading = true
+            sessions = repository.getFocusSessions()
             onSessionsLoaded(sessions)
             isLoading = false
-            isError = false
+            isError = sessions.isEmpty()
         } catch (e: Exception) {
             isLoading = false
             isError = true
@@ -149,7 +151,7 @@ fun PomodoroScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Gagal Memuat Data",
+                    text = "Gagal Memuat Focus Session",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -158,7 +160,7 @@ fun PomodoroScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Pastikan koneksi internet Anda menyala",
+                    text = "Periksa koneksi internet untuk memuat session fokus",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -173,7 +175,23 @@ fun PomodoroScreen(
         ) {
             item {
                 Text(
-                    text = "Rekomendasi Populer",
+                    text = "Pomodoro Productivity App",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Pilih session fokus untuk membantu belajar lebih teratur dan produktif.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = "Rekomendasi Focus Session",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -296,7 +314,7 @@ fun SessionItem(session: FocusSession, navController: NavController) {
                 ) {
                     Icon(
                         imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                        contentDescription = "Favorite Icon",
+                        contentDescription = "Favorite Session",
                         tint = if (isFavorite) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.onSurface
                     )
@@ -344,7 +362,7 @@ fun SessionItem(session: FocusSession, navController: NavController) {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Pesan",
+                    text = "Mulai Sesi",
                     color = MaterialTheme.colorScheme.onPrimary
                 )
             }
@@ -402,7 +420,7 @@ fun DetailScreen(
                     ) {
                         Icon(
                             imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                            contentDescription = "Favorite Icon",
+                            contentDescription = "Favorite Session",
                             tint = if (isFavorite) MaterialTheme.colorScheme.primary
                             else MaterialTheme.colorScheme.onSurface
                         )
@@ -450,7 +468,7 @@ fun DetailScreen(
                                 isLoading = true
                                 delay(2000)
                                 snackbarHostState.showSnackbar(
-                                    "Sesi ${session.title} berhasil dimulai!"
+                                    "${session.title} dimulai!"
                                 )
                                 isLoading = false
                             }
@@ -465,10 +483,10 @@ fun DetailScreen(
                                 strokeWidth = 2.dp
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Memproses...")
+                            Text("Menyiapkan Session...")
                         } else {
                             Text(
-                                text = "Pesan Sekarang",
+                                text = "Mulai Pomodoro",
                                 color = MaterialTheme.colorScheme.onPrimary
                             )
                         }
@@ -495,7 +513,7 @@ fun DetailScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            text = "Pesan",
+                            text = "Lihat Detail",
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                     }

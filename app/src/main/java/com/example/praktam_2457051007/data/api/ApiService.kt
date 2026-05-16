@@ -1,9 +1,10 @@
-package com.example.praktam_2457051007.network
+package com.example.praktam_2457051007.data.api
 
-import com.example.praktam_2457051007.model.FocusSession
+import com.example.praktam_2457051007.data.model.FocusSession
 import retrofit2.http.GET
 
 interface ApiService {
+
     @GET("focus_session.json")
     suspend fun getFocusSessions(): List<FocusSession>
 }
